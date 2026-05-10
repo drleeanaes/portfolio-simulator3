@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Simulator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root,[data-theme="dark"]{
+  --bg:#0d0f0e;--surface:#141614;--surface2:#1a1d1a;
+  --border:rgba(255,255,255,0.07);--border-hover:rgba(255,255,255,0.14);
+  --text:#e8ebe8;--muted:#6b7068;--dim:#3d4039;
+  --accent:#a8f0a0;--accent-glow:rgba(168,240,160,0.12);--accent-hi:rgba(168,240,160,0.25);--accent-text:#0a1a0a;
+  --red:#f06b5b;
+  --voo:#5b9cf6;--hk:#4eca8b;--btc:#f0975b;--gold:#f0c85b;
+  --chart-grid:rgba(255,255,255,0.04);--chart-tick:#6b7068;
+  --chart-tt-bg:#1a1d1a;--chart-tt-border:rgba(255,255,255,0.10);--chart-tt-title:#6b7068;--chart-tt-body:#e8ebe8;
+  --chart-total:#e8ebe8;
+  --contrib-fill:rgba(255,255,255,0.10);--contrib-border:rgba(255,255,255,0.15);
+  --gain-fill:rgba(168,240,160,0.30);--gain-border:#a8f0a0;
+}
+[data-theme="light"]{
+  --bg:#efefed;--surface:#fafaf8;--surface2:#f0f0ee;
+  --border:rgba(0,0,0,0.08);--border-hover:rgba(0,0,0,0.16);
+  --text:#1a1c1a;--muted:#7a7d78;--dim:#c4c6c2;
+  --accent:#1a7a14;--accent-glow:rgba(26,122,20,0.07);--accent-hi:rgba(26,122,20,0.14);--accent-text:#fff;
+  --red:#c93d2d;
+  --voo:#2563eb;--hk:#16a34a;--btc:#c2410c;--gold:#a16207;
+  --chart-grid:rgba(0,0,0,0.06);--chart-tick:#9a9d98;
+  --chart-tt-bg:#fff;--chart-tt-border:rgba(0,0,0,0.10);--chart-tt-title:#9a9d98;--chart-tt-body:#1a1c1a;
+  --chart-total:#1a1c1a;
+  --contrib-fill:rgba(0,0,0,0.06);--contrib-border:rgba(0,0,0,0.12);
+  --gain-fill:rgba(26,122,20,0.14);--gain-border:#1a7a14;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.6;min-height:100vh;transition:background .25s,color .25s}
+.shell{max-width:1140px;margin:0 auto;padding:0 24px 80px}
+
+header{padding:36px 0 28px;border-bottom:1px solid var(--border);margin-bottom:36px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-mark{width:34px;height:34px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;transition:background .25s}
+.logo-mark svg{width:18px;height:18px}
+.app-title{font-size:18px;font-weight:500;letter-spacing:-.3px;color:var(--text)}
+.app-sub{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:1px}
+.header-right{display:flex;align-items:center;gap:12px}
+.header-note{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;text-align:right}
+.theme-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.theme-btn:hover{background:var(--surface2);border-color:var(--border-hover)}
+.theme-btn svg{width:15px;height:15px}
+[data-theme="dark"] .icon-moon{display:none}[data-theme="dark"] .icon-sun{display:block}
+[data-theme="light"] .icon-sun{display:none}[data-theme="light"] .icon-moon{display:block}
+
+.main-grid{display:grid;grid-template-columns:340px 1fr;gap:24px;align-items:start}
+@media(max-width:860px){.main-grid{grid-template-columns:1fr}}
+.sidebar{display:flex;flex-direction:column;gap:16px;position:sticky;top:20px}
+
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:18px 20px;transition:background .25s,border-color .25s}
+.panel-title{font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.panel-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* currency toggle */
+.cur-toggle{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px;gap:3px;margin-bottom:14px;width:fit-content;transition:background .25s}
+.cur-btn{padding:5px 16px;border-radius:5px;border:none;background:transparent;color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;transition:all .15s;font-weight:500}
+.cur-btn.active{background:var(--accent);color:var(--accent-text)}
+
+/* fields */
+.field{margin-bottom:12px}
+.field-label{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:5px;display:flex;justify-content:space-between}
+.field-label span{color:var(--text);font-weight:500}
+input[type="number"]{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;font-weight:500;outline:none;transition:border-color .15s,background .25s;-moz-appearance:textfield}
+input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type="number"]:focus{border-color:var(--accent)}
+input[type="range"]{width:100%;-webkit-appearance:none;appearance:none;height:4px;background:var(--dim);border-radius:2px;outline:none;cursor:pointer;transition:background .25s}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--accent);cursor:pointer;transition:transform .1s,background .25s}
+input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+
+/* ── Asset cards ── */
+.asset-card{background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:12px 14px;margin-bottom:8px;transition:border-color .15s,background .25s}
+.asset-card:hover{border-color:var(--border-hover)}
+.asset-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.asset-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.asset-name{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.asset-ticker{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;transition:background .25s}
+
+/* per-asset scenario pills */
+.scen-pills{display:flex;gap:4px;margin-bottom:8px}
+.scen-pill{flex:1;padding:3px 0;border-radius:5px;border:1px solid var(--border);background:transparent;font-family:'DM Mono',monospace;font-size:9px;font-weight:500;cursor:pointer;color:var(--muted);text-align:center;transition:all .15s;letter-spacing:.02em}
+.scen-pill:hover{border-color:var(--border-hover)}
+.scen-pill.bear-on{border-color:#f06b5b;background:rgba(240,107,91,0.12);color:#f06b5b}
+.scen-pill.base-on{border-color:var(--accent);background:var(--accent-glow);color:var(--accent)}
+.scen-pill.bull-on{border-color:#4eca8b;background:rgba(78,202,139,0.12);color:#4eca8b}
+.scen-pill.hist-on{border-color:#f0c85b;background:rgba(240,200,91,0.12);color:#f0c85b}
+
+.asset-rate-display{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:6px}
+.asset-rate-display strong{color:var(--text)}
+
+.asset-input-row{display:flex;align-items:center;gap:8px}
+.pct-input{width:60px!important;text-align:right;padding:5px 8px!important;font-size:13px!important}
+.pct-sign{font-family:'DM Mono',monospace;font-size:13px;color:var(--muted)}
+.mini-bar-track{flex:1;height:3px;background:var(--dim);border-radius:2px;overflow:hidden}
+.mini-bar-fill{height:3px;border-radius:2px;transition:width .3s}
+
+.alloc-total{display:flex;align-items:center;justify-content:space-between;padding:8px 0 0;font-size:12px;font-family:'DM Mono',monospace;color:var(--muted)}
+.alloc-badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500}
+.alloc-ok{background:var(--accent-glow);color:var(--accent)}
+.alloc-err{background:rgba(201,61,45,0.12);color:var(--red)}
+
+/* metrics */
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:24px}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 15px;transition:background .25s,border-color .25s}
+.metric-card.hi{border-color:var(--accent-hi);background:var(--accent-glow)}
+.metric-lbl{font-size:10px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px}
+.metric-val{font-size:22px;font-weight:500;font-family:'DM Mono',monospace;color:var(--text);letter-spacing:-.5px}
+.metric-sub{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* scenario summary bar */
+.scen-summary{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:20px;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.scen-chip{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500}
+.chip-bear{background:rgba(240,107,91,0.15);color:#f06b5b}
+.chip-base{background:var(--accent-glow);color:var(--accent)}
+.chip-bull{background:rgba(78,202,139,0.15);color:#4eca8b}
+.chip-hist{background:rgba(240,200,91,0.15);color:#f0c85b}
+
+/* charts */
+.charts-area{display:flex;flex-direction:column;gap:18px}
+.chart-panel{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:18px 20px;transition:background .25s,border-color .25s}
+.chart-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.chart-title{font-size:13px;font-weight:500;color:var(--text)}
+.chart-desc{font-size:11px;color:var(--muted);margin-top:2px}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--muted);font-family:'DM Mono',monospace}
+.leg{display:flex;align-items:center;gap:4px}
+.leg-sw{width:14px;height:2px;border-radius:1px;flex-shrink:0}
+
+/* disclaimer */
+.disclaimer{margin-top:14px;padding:12px 16px;background:rgba(91,156,246,0.07);border:1px solid rgba(91,156,246,0.18);border-radius:9px;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);line-height:1.75}
+.disclaimer strong{color:var(--text)}
+.footer-note{margin-top:14px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;line-height:1.8;transition:background .25s}
+.footer-note strong{color:var(--dim)}
+</style>
+</head>
+<body>
+<div class="shell">
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 20 20" fill="none">
+        <path d="M3 16 L7 8 L11 12 L15 5 L17 9" stroke="var(--accent-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="17" cy="9" r="2" fill="var(--accent-text)"/>
+      </svg>
+    </div>
+    <div>
+      <div class="app-title">Portfolio Simulator</div>
+      <div class="app-sub">per-asset scenario projector</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="header-note">Mix bear · base · bull per asset<br>For education only · Not financial advice</div>
+    <button class="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+      <svg class="icon-sun" viewBox="0 0 16 16" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round">
+        <circle cx="8" cy="8" r="3"/>
+        <line x1="8" y1="1" x2="8" y2="2.5"/><line x1="8" y1="13.5" x2="8" y2="15"/>
+        <line x1="1" y1="8" x2="2.5" y2="8"/><line x1="13.5" y1="8" x2="15" y2="8"/>
+        <line x1="3.05" y1="3.05" x2="4.1" y2="4.1"/><line x1="11.9" y1="11.9" x2="12.95" y2="12.95"/>
+        <line x1="12.95" y1="3.05" x2="11.9" y2="4.1"/><line x1="4.1" y1="11.9" x2="3.05" y2="12.95"/>
+      </svg>
+      <svg class="icon-moon" viewBox="0 0 16 16" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13.5 10.5A6 6 0 0 1 5.5 2.5a6 6 0 1 0 8 8z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<div class="main-grid">
+  <aside class="sidebar">
+    <!-- Settings panel -->
+    <div class="panel">
+      <div class="panel-title">Settings</div>
+      <div class="cur-toggle">
+        <button class="cur-btn active" id="btnHKD" onclick="setCur('HKD')">HKD</button>
+        <button class="cur-btn"        id="btnUSD" onclick="setCur('USD')">USD</button>
+      </div>
+      <div class="field">
+        <div class="field-label">Monthly investment <span id="convertLabel"></span></div>
+        <input type="number" id="monthly" value="10000" min="100" step="500" oninput="recalc()">
+      </div>
+      <div class="field">
+        <div class="field-label">Time horizon <span id="yearLabel">20 years</span></div>
+        <input type="range" id="years" min="5" max="30" value="20" step="1"
+          oninput="document.getElementById('yearLabel').textContent=this.value+' years';recalc()">
+      </div>
+    </div>
+
+    <!-- Allocation panel -->
+    <div class="panel">
+      <div class="panel-title">Allocation &amp; Scenario</div>
+
+      <!-- VOO -->
+      <div class="asset-card">
+        <div class="asset-header">
+          <div class="asset-dot" style="background:var(--voo)"></div>
+          <div class="asset-name">S&amp;P 500</div>
+          <span class="asset-ticker">VOO</span>
+        </div>
+        <div class="scen-pills">
+          <button class="scen-pill" id="VOO-bear" onclick="setAssetScen('VOO','bear')">🔴 Bear 4%</button>
+          <button class="scen-pill base-on" id="VOO-base" onclick="setAssetScen('VOO','base')">🔵 Base 7.5%</button>
+          <button class="scen-pill" id="VOO-bull" onclick="setAssetScen('VOO','bull')">🟢 Bull 11%</button>
+          <button class="scen-pill" id="VOO-hist" onclick="setAssetScen('VOO','hist')">📈 Hist 13.8%</button>
+        </div>
+        <div class="asset-rate-display" id="VOO-rateDisplay">Return: <strong>7.5% p.a.</strong> — Base: Schwab/Vanguard forward consensus</div>
+        <div class="asset-input-row">
+          <input type="number" class="pct-input" id="pVOO" value="40" min="0" max="100" step="5" oninput="recalc()">
+          <span class="pct-sign">%</span>
+          <div class="mini-bar-track"><div class="mini-bar-fill" id="bVOO" style="background:var(--voo);width:40%"></div></div>
+        </div>
+      </div>
+
+      <!-- HK 2800 -->
+      <div class="asset-card">
+        <div class="asset-header">
+          <div class="asset-dot" style="background:var(--hk)"></div>
+          <div class="asset-name">Tracker Fund HK</div>
+          <span class="asset-ticker">2800</span>
+        </div>
+        <div class="scen-pills">
+          <button class="scen-pill" id="HK-bear" onclick="setAssetScen('HK','bear')">🔴 Bear 1.5%</button>
+          <button class="scen-pill base-on" id="HK-base" onclick="setAssetScen('HK','base')">🔵 Base 4%</button>
+          <button class="scen-pill" id="HK-bull" onclick="setAssetScen('HK','bull')">🟢 Bull 7%</button>
+          <button class="scen-pill" id="HK-hist" onclick="setAssetScen('HK','hist')">📈 Hist 4.1%</button>
+        </div>
+        <div class="asset-rate-display" id="HK-rateDisplay">Return: <strong>4.0% p.a.</strong> — Base: HSI dividend-adjusted forward estimate</div>
+        <div class="asset-input-row">
+          <input type="number" class="pct-input" id="pHK" value="20" min="0" max="100" step="5" oninput="recalc()">
+          <span class="pct-sign">%</span>
+          <div class="mini-bar-track"><div class="mini-bar-fill" id="bHK" style="background:var(--hk);width:20%"></div></div>
+        </div>
+      </div>
+
+      <!-- BTC -->
+      <div class="asset-card">
+        <div class="asset-header">
+          <div class="asset-dot" style="background:var(--btc)"></div>
+          <div class="asset-name">Bitcoin</div>
+          <span class="asset-ticker">BTC</span>
+        </div>
+        <div class="scen-pills">
+          <button class="scen-pill" id="BTC-bear" onclick="setAssetScen('BTC','bear')">🔴 Bear 5%</button>
+          <button class="scen-pill base-on" id="BTC-base" onclick="setAssetScen('BTC','base')">🔵 Base 15%</button>
+          <button class="scen-pill" id="BTC-bull" onclick="setAssetScen('BTC','bull')">🟢 Bull 30%</button>
+          <button class="scen-pill" id="BTC-hist" onclick="setAssetScen('BTC','hist')">📈 Hist 40%</button>
+        </div>
+        <div class="asset-rate-display" id="BTC-rateDisplay">Return: <strong>15.0% p.a.</strong> — Base: maturing cycle, Ark Invest bear case</div>
+        <div class="asset-input-row">
+          <input type="number" class="pct-input" id="pBTC" value="20" min="0" max="100" step="5" oninput="recalc()">
+          <span class="pct-sign">%</span>
+          <div class="mini-bar-track"><div class="mini-bar-fill" id="bBTC" style="background:var(--btc);width:20%"></div></div>
+        </div>
+      </div>
+
+      <!-- Gold -->
+      <div class="asset-card">
+        <div class="asset-header">
+          <div class="asset-dot" style="background:var(--gold)"></div>
+          <div class="asset-name">Gold</div>
+          <span class="asset-ticker">XAU</span>
+        </div>
+        <div class="scen-pills">
+          <button class="scen-pill" id="Gold-bear" onclick="setAssetScen('Gold','bear')">🔴 Bear 3%</button>
+          <button class="scen-pill base-on" id="Gold-base" onclick="setAssetScen('Gold','base')">🔵 Base 6.5%</button>
+          <button class="scen-pill" id="Gold-bull" onclick="setAssetScen('Gold','bull')">🟢 Bull 10%</button>
+          <button class="scen-pill" id="Gold-hist" onclick="setAssetScen('Gold','hist')">📈 Hist 7.9%</button>
+        </div>
+        <div class="asset-rate-display" id="Gold-rateDisplay">Return: <strong>6.5% p.a.</strong> — Base: inflation hedge + central bank demand</div>
+        <div class="asset-input-row">
+          <input type="number" class="pct-input" id="pGold" value="20" min="0" max="100" step="5" oninput="recalc()">
+          <span class="pct-sign">%</span>
+          <div class="mini-bar-track"><div class="mini-bar-fill" id="bGold" style="background:var(--gold);width:20%"></div></div>
+        </div>
+      </div>
+
+      <div class="alloc-total">
+        <span>Total allocation</span>
+        <span class="alloc-badge alloc-ok" id="totalBadge">100%</span>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <!-- Active scenario summary -->
+    <div class="scen-summary" id="scenSummary"></div>
+
+    <!-- Key metrics -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-lbl">Total invested</div>
+        <div class="metric-val" id="mInvested">—</div>
+        <div class="metric-sub" id="mInvestedSub">—</div>
+      </div>
+      <div class="metric-card hi">
+        <div class="metric-lbl">Portfolio value</div>
+        <div class="metric-val" id="mFinal" style="color:var(--accent)">—</div>
+        <div class="metric-sub" id="mFinalSub">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-lbl">Total gain</div>
+        <div class="metric-val" id="mGain">—</div>
+        <div class="metric-sub" id="mGainSub">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-lbl">Blended CAGR</div>
+        <div class="metric-val" id="mCAGR">—</div>
+        <div class="metric-sub">compound annual growth rate</div>
+      </div>
+    </div>
+
+    <div class="charts-area">
+      <div class="chart-panel">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Accumulated portfolio value</div>
+            <div class="chart-desc">Per-asset and total, compounded monthly with your chosen scenarios</div>
+          </div>
+          <div class="legend" id="lgd1"></div>
+        </div>
+        <div style="position:relative;height:300px">
+          <canvas id="growthChart" role="img" aria-label="Line chart of accumulated portfolio value using per-asset scenarios">Growth chart.</canvas>
+        </div>
+      </div>
+
+      <div class="chart-panel">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Asset contribution breakdown</div>
+            <div class="chart-desc">Stacked view of how each asset builds the total</div>
+          </div>
+          <div class="legend" id="lgd2"></div>
+        </div>
+        <div style="position:relative;height:240px">
+          <canvas id="stackChart" role="img" aria-label="Stacked area chart of asset contributions">Stack chart.</canvas>
+        </div>
+      </div>
+
+      <div class="chart-panel">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Year-by-year gain vs contributions</div>
+            <div class="chart-desc">How investment returns grow relative to money put in each year</div>
+          </div>
+        </div>
+        <div style="position:relative;height:200px">
+          <canvas id="annualChart" role="img" aria-label="Stacked bar chart of annual contributions vs investment gains">Annual chart.</canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      <strong>Per-asset scenario guide:</strong><br>
+      🔴 Bear — pessimistic: valuation compression, macro headwinds, low liquidity.<br>
+      🔵 Base — realistic forward consensus from Goldman Sachs, Schwab, Vanguard (2026 outlooks).<br>
+      🟢 Bull — optimistic: continued AI/tech tailwinds, BTC institutional adoption, strong EM recovery.<br>
+      📈 Hist — actual 2005–2025 average returns (backtest only — not a forward projection).<br>
+      Mix and match freely — e.g. Bear VOO + Bull Gold models a stagflation scenario.
+    </div>
+
+    <div class="footer-note">
+      <strong>Return assumptions by scenario</strong><br>
+      VOO: Bear 4% (P/E compression 22x→16x) · Base 7.5% (Schwab/Vanguard consensus) · Bull 11% (Goldman Sachs bull) · Hist 13.8% (S&amp;P 500 total return 2005–2025) &nbsp;·&nbsp;
+      2800: Bear 1.5% · Base 4% · Bull 7% · Hist 4.1% (HSI 2005–2025) &nbsp;·&nbsp;
+      BTC: Bear 5% · Base 15% (Ark Invest bear) · Bull 30% (institutional adoption) · Hist 40% (2014–2025 geometric mean) &nbsp;·&nbsp;
+      Gold: Bear 3% · Base 6.5% (inflation hedge) · Bull 10% (USD debasement) · Hist 7.9% (LBMA 2005–2025) &nbsp;·&nbsp;
+      USD/HKD 7.80. All pre-tax, pre-inflation, net of ETF fees. Monthly DCA. Not financial advice.
+    </div>
+  </main>
+</div>
+</div>
+
+<script>
+/* ── theme ── */
+function toggleTheme(){
+  const h=document.documentElement;
+  const n=h.dataset.theme==='dark'?'light':'dark';
+  h.dataset.theme=n;
+  try{localStorage.setItem('ps-theme',n)}catch(e){}
+  recalc();
+}
+try{const s=localStorage.getItem('ps-theme');if(s)document.documentElement.dataset.theme=s}catch(e){}
+
+/* ── per-asset scenario data ── */
+const ASSET_SCENS = {
+  VOO: {
+    bear:{rate:0.040, label:'Bear 4%',   note:'P/E compression 22x→16x, slowing earnings growth'},
+    base:{rate:0.075, label:'Base 7.5%', note:'Schwab/Vanguard forward consensus (2026 outlook)'},
+    bull:{rate:0.110, label:'Bull 11%',  note:'Goldman Sachs bull — AI productivity, margin expansion'},
+    hist:{rate:0.138, label:'Hist 13.8%',note:'Actual S&P 500 total return 2005–2025 (backtest only)'},
+  },
+  HK: {
+    bear:{rate:0.015, label:'Bear 1.5%', note:'Continued structural headwinds, capital outflows'},
+    base:{rate:0.040, label:'Base 4%',   note:'HSI dividend-adjusted, mild recovery scenario'},
+    bull:{rate:0.070, label:'Bull 7%',   note:'China stimulus, HK re-rating, tech sector recovery'},
+    hist:{rate:0.041, label:'Hist 4.1%', note:'Hang Seng Index annual return 2005–2025'},
+  },
+  BTC: {
+    bear:{rate:0.050, label:'Bear 5%',   note:'Regulatory crackdown, maturing asset, high correlation to risk'},
+    base:{rate:0.150, label:'Base 15%',  note:'Ark Invest bear case — ETF inflows, halving cycle normalises'},
+    bull:{rate:0.300, label:'Bull 30%',  note:'Institutional adoption, Bitcoin reserve status, nation-state buying'},
+    hist:{rate:0.400, label:'Hist 40%',  note:'2014–2025 geometric mean (true mean ~79%, capped conservatively)'},
+  },
+  Gold: {
+    bear:{rate:0.030, label:'Bear 3%',   note:'Real rates rise, USD strengthens, risk appetite returns'},
+    base:{rate:0.065, label:'Base 6.5%', note:'Central bank demand, inflation hedge, USD debasement trend'},
+    bull:{rate:0.100, label:'Bull 10%',  note:'Stagflation, geopolitical risk, de-dollarisation acceleration'},
+    hist:{rate:0.079, label:'Hist 7.9%', note:'LBMA gold price USD annualised return 2005–2025'},
+  },
+};
+
+/* active scenario per asset */
+const assetScen = {VOO:'base', HK:'base', BTC:'base', Gold:'base'};
+
+const CVARS = {VOO:'--voo', HK:'--hk', BTC:'--btc', Gold:'--gold'};
+const NAMES = {VOO:'VOO (S&P 500)', HK:'2800 (Tracker HK)', BTC:'Bitcoin', Gold:'Gold'};
+const USDRATE = 7.8;
+
+let cur='HKD';
+let growthChart=null, stackChart=null, annualChart=null;
+
+function cv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+function ac(k){return cv(CVARS[k])}
+
+function setAssetScen(asset, scen) {
+  assetScen[asset] = scen;
+  /* update pill styles */
+  ['bear','base','bull','hist'].forEach(s => {
+    const btn = document.getElementById(asset+'-'+s);
+    btn.className = 'scen-pill' + (s===scen ? ' '+s+'-on' : '');
+  });
+  /* update rate display */
+  const d = ASSET_SCENS[asset][scen];
+  document.getElementById(asset+'-rateDisplay').innerHTML =
+    `Return: <strong>${d.label.split(' ')[1]} p.a.</strong> — ${d.note}`;
+  recalc();
+}
+
+function setCur(c){
+  cur=c;
+  document.getElementById('btnHKD').classList.toggle('active',c==='HKD');
+  document.getElementById('btnUSD').classList.toggle('active',c==='USD');
+  recalc();
+}
+
+function fmt(v,short){
+  const sym=cur==='HKD'?'HK$':'US$';
+  if(short){
+    if(v>=1e6) return sym+(v/1e6).toFixed(2)+'M';
+    if(v>=1e3) return sym+(v/1e3).toFixed(1)+'k';
+  }
+  return sym+Math.round(v).toLocaleString();
+}
+
+function recalc(){
+  const rawMonthly=parseFloat(document.getElementById('monthly').value)||0;
+  const yrs=parseInt(document.getElementById('years').value);
+  const monthly=cur==='HKD'?rawMonthly:rawMonthly*USDRATE;
+
+  const allocs={
+    VOO: (parseFloat(document.getElementById('pVOO').value)||0)/100,
+    HK:  (parseFloat(document.getElementById('pHK').value) ||0)/100,
+    BTC: (parseFloat(document.getElementById('pBTC').value)||0)/100,
+    Gold:(parseFloat(document.getElementById('pGold').value)||0)/100,
+  };
+
+  const totalPct=Object.values(allocs).reduce((s,v)=>s+v*100,0);
+  const ok=Math.abs(totalPct-100)<0.5;
+  const badge=document.getElementById('totalBadge');
+  badge.textContent=totalPct.toFixed(0)+'%';
+  badge.className='alloc-badge '+(ok?'alloc-ok':'alloc-err');
+
+  ['VOO','HK','BTC','Gold'].forEach(k=>{
+    document.getElementById('b'+k).style.width=Math.min((allocs[k]||0)*100,100)+'%';
+  });
+
+  document.getElementById('convertLabel').textContent=cur==='HKD'
+    ?'≈ US$'+(rawMonthly/USDRATE).toFixed(0)+'/mo'
+    :'≈ HK$'+Math.round(rawMonthly*USDRATE).toLocaleString()+'/mo';
+
+  /* scenario summary bar */
+  const chipCls={bear:'chip-bear',base:'chip-base',bull:'chip-bull',hist:'chip-hist'};
+  const scenBar=document.getElementById('scenSummary');
+  scenBar.innerHTML='<span style="margin-right:4px">Active scenarios:</span>'+
+    Object.entries(assetScen).map(([k,s])=>{
+      const rate=(ASSET_SCENS[k][s].rate*100).toFixed(1)+'%';
+      return `<span class="scen-chip ${chipCls[s]}">${NAMES[k]}: ${rate}</span>`;
+    }).join('');
+
+  const months=yrs*12;
+  const yearLabels=Array.from({length:yrs},(_,i)=>'Yr '+(i+1));
+
+  function simAsset(rate,allocFrac){
+    const r=rate/12; let val=0; const yearly=[];
+    for(let m=1;m<=months;m++){
+      val=(val+monthly*allocFrac)*(1+r);
+      if(m%12===0) yearly.push(Math.round(cur==='HKD'?val:val/USDRATE));
+    }
+    return yearly;
+  }
+
+  const series={};
+  ['VOO','HK','BTC','Gold'].forEach(k=>{
+    series[k]=simAsset(ASSET_SCENS[k][assetScen[k]].rate, allocs[k]);
+  });
+
+  const totalSeries=yearLabels.map((_,i)=>Object.values(series).reduce((s,a)=>s+(a[i]||0),0));
+
+  const invested=months*(cur==='HKD'?monthly:monthly/USDRATE);
+  const finalVal=totalSeries[totalSeries.length-1];
+  const gain=finalVal-invested;
+  const gainPct=((gain/invested)*100).toFixed(1);
+  const cagr=(Math.pow(finalVal/invested,1/yrs)-1)*100;
+
+  document.getElementById('mInvested').textContent=fmt(invested,true);
+  document.getElementById('mInvestedSub').textContent=yrs+' yrs × '+fmt(rawMonthly,false)+'/mo';
+  document.getElementById('mFinal').textContent=fmt(finalVal,true);
+  document.getElementById('mFinalSub').textContent='at end of year '+yrs;
+  document.getElementById('mGain').textContent=(gain>=0?'+':'')+fmt(gain,true);
+  document.getElementById('mGain').style.color=gain>=0?cv('--accent'):cv('--red');
+  document.getElementById('mGainSub').textContent='+'+gainPct+'% return on capital';
+  document.getElementById('mCAGR').textContent=cagr.toFixed(1)+'%';
+
+  const sym=cur==='HKD'?'HK$':'US$';
+  function fmtTick(v){
+    if(v>=1e6) return sym+(v/1e6).toFixed(1)+'M';
+    if(v>=1e3) return sym+(v/1e3).toFixed(0)+'k';
+    return sym+v;
+  }
+
+  function buildLegend(id,keys,showTotal){
+    const el=document.getElementById(id); el.innerHTML='';
+    keys.forEach(k=>{
+      if((allocs[k]||0)===0) return;
+      const item=document.createElement('span'); item.className='leg';
+      item.innerHTML=`<span class="leg-sw" style="background:${ac(k)}"></span>${NAMES[k]}`;
+      el.appendChild(item);
+    });
+    if(showTotal){
+      const item=document.createElement('span'); item.className='leg';
+      item.innerHTML=`<span class="leg-sw" style="background:${cv('--chart-total')}"></span>Total`;
+      el.appendChild(item);
+    }
+  }
+
+  buildLegend('lgd1',['VOO','HK','BTC','Gold'],true);
+  buildLegend('lgd2',['VOO','HK','BTC','Gold'],false);
+
+  const chartBase={
+    responsive:true, maintainAspectRatio:false,
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        backgroundColor:cv('--chart-tt-bg'),borderColor:cv('--chart-tt-border'),borderWidth:1,
+        titleColor:cv('--chart-tt-title'),bodyColor:cv('--chart-tt-body'),padding:10,
+        callbacks:{label:c=>' '+c.dataset.label+': '+sym+c.parsed.y.toLocaleString()}
+      }
+    },
+    scales:{
+      x:{grid:{color:cv('--chart-grid')},ticks:{color:cv('--chart-tick'),font:{size:10,family:"'DM Mono',monospace"},maxTicksLimit:10}},
+      y:{grid:{color:cv('--chart-grid')},ticks:{color:cv('--chart-tick'),font:{size:10,family:"'DM Mono',monospace"},callback:fmtTick}}
+    }
+  };
+
+  /* growth line chart */
+  if(growthChart) growthChart.destroy();
+  const gDS=[];
+  ['VOO','HK','BTC','Gold'].forEach(k=>{
+    if((allocs[k]||0)===0) return;
+    gDS.push({label:NAMES[k],data:series[k],borderColor:ac(k),borderWidth:1.5,
+      borderDash:k==='HK'?[5,3]:k==='BTC'?[2,2]:k==='Gold'?[7,3]:[],
+      pointRadius:0,pointHoverRadius:4,tension:0.35,fill:false});
+  });
+  gDS.push({label:'Total',data:totalSeries,borderColor:cv('--chart-total'),borderWidth:2.5,pointRadius:0,pointHoverRadius:5,tension:0.35,fill:false});
+  growthChart=new Chart(document.getElementById('growthChart').getContext('2d'),{type:'line',data:{labels:yearLabels,datasets:gDS},options:chartBase});
+
+  /* stacked area */
+  if(stackChart) stackChart.destroy();
+  const sDS=[];
+  ['Gold','BTC','HK','VOO'].forEach(k=>{
+    if((allocs[k]||0)===0) return;
+    sDS.push({label:NAMES[k],data:series[k],backgroundColor:ac(k)+'40',borderColor:ac(k),borderWidth:1,fill:true,tension:0.35,pointRadius:0});
+  });
+  stackChart=new Chart(document.getElementById('stackChart').getContext('2d'),{type:'line',data:{labels:yearLabels,datasets:sDS},
+    options:{...chartBase,scales:{x:{...chartBase.scales.x,stacked:true},y:{...chartBase.scales.y,stacked:true}}}});
+
+  /* annual bar */
+  if(annualChart) annualChart.destroy();
+  const annC=yearLabels.map(()=>Math.round(cur==='HKD'?monthly*12:monthly*12/USDRATE));
+  const annG=yearLabels.map((_,i)=>{
+    const prev=i===0?0:totalSeries[i-1];
+    const c=Math.round(cur==='HKD'?monthly*12:monthly*12/USDRATE);
+    return Math.max(0,Math.round(totalSeries[i]-prev-c));
+  });
+  annualChart=new Chart(document.getElementById('annualChart').getContext('2d'),{
+    type:'bar',
+    data:{labels:yearLabels,datasets:[
+      {label:'Contributions',data:annC,backgroundColor:cv('--contrib-fill'),borderColor:cv('--contrib-border'),borderWidth:1,borderRadius:3},
+      {label:'Investment gain',data:annG,backgroundColor:cv('--gain-fill'),borderColor:cv('--gain-border'),borderWidth:1,borderRadius:3},
+    ]},
+    options:{...chartBase,scales:{x:{...chartBase.scales.x,stacked:true},y:{...chartBase.scales.y,stacked:true}}}
+  });
+}
+
+/* init */
+recalc();
+</script>
+</body>
+</html>
